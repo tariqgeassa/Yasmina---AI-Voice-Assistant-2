@@ -29,7 +29,7 @@ export class LiveSessionManager {
   public onStateChange: (state: "idle" | "listening" | "processing" | "speaking") => void = () => {};
   public onMessage: (sender: "user" | "yasmina", text: string) => void = () => {};
   public onCommand: (url: string) => void = () => {};
-  public onClose: () => void = () => {};
+  public onClose: (reason?: string) => void = () => {};
 
   constructor() {
     this.ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -97,7 +97,7 @@ export class LiveSessionManager {
 
       // Connect to Live API
       this.sessionPromise = this.ai.live.connect({
-        model: "gemini-3.1-flash-live-preview",
+        model: "gemini-2.0-flash-exp",
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
@@ -130,10 +130,10 @@ export class LiveSessionManager {
             this.onStateChange("listening");
           },
           onmessage: async (message: LiveServerMessage) => {
-            // Handle GoAway
-            if ((message as any).serverContent?.goAway) {
-              console.log("Live API: Received GoAway signal. Closing session.");
-              this.stop();
+            // Handle GoAway explicitly
+            if ((message as any).serverContent?.goAway || (message as any).goAway) {
+              console.warn("Live API: Received GoAway signal (session limit reached). Closing session gracefully.");
+              this.stop("GoAway signal received");
               return;
             }
 
@@ -195,19 +195,19 @@ export class LiveSessionManager {
             }
           },
           onclose: () => {
-            console.log("Live API Closed");
-            this.stop();
+            console.warn("Live API: Connection closed by server or network.");
+            this.stop("Connection closed");
           },
           onerror: (err) => {
-            console.error("Live API Error:", err);
-            this.stop();
+            console.error("Live API: Connection error occurred:", err);
+            this.stop(`Error: ${err}`);
           }
         }
       });
 
     } catch (error) {
       console.error("Failed to start Live Session:", error);
-      this.stop();
+      this.stop(`Start failed: ${error}`);
     }
   }
 
@@ -267,7 +267,8 @@ export class LiveSessionManager {
     }
   }
 
-  stop() {
+  stop(reason: string = "User requested") {
+    console.log(`Stopping session. Reason: ${reason}`);
     const sessionToClose = this.sessionPromise;
     this.sessionPromise = null; // Prevent further audio processing
     
@@ -299,7 +300,7 @@ export class LiveSessionManager {
     }
     
     this.onStateChange("idle");
-    this.onClose();
+    this.onClose(reason);
   }
 
   sendText(text: string) {

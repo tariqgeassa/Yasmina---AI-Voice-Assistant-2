@@ -203,7 +203,8 @@ export default function App() {
           }, 1000);
         };
 
-        session.onClose = () => {
+        session.onClose = (reason) => {
+          console.log(`Session closed: ${reason}`);
           setIsSessionActive(false);
           releaseWakeLock();
           setAppState("idle");
