@@ -97,7 +97,7 @@ export class LiveSessionManager {
 
       // Connect to Live API
       this.sessionPromise = this.ai.live.connect({
-        model: "gemini-2.0-flash-exp",
+        model: "gemini-3.1-flash-live-preview",
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
@@ -140,6 +140,7 @@ export class LiveSessionManager {
             // Handle Audio Output
             const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
             if (base64Audio) {
+              console.log("Live API: Received audio chunk");
               if (!this.isPlaying) {
                 this.onStateChange("speaking");
               }
@@ -153,10 +154,11 @@ export class LiveSessionManager {
             }
 
             // Handle Transcriptions
-            const userText = message.serverContent?.modelTurn?.parts?.[0]?.text;
-            if (userText) {
+            const modelText = message.serverContent?.modelTurn?.parts?.[0]?.text;
+            if (modelText) {
+               console.log("Live API: Received model text response");
                // Output transcription
-               this.onMessage("yasmina", userText);
+               this.onMessage("yasmina", modelText);
             }
 
             // Handle Function Calls
