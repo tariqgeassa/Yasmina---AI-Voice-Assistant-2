@@ -39,12 +39,7 @@ export class LiveSessionManager {
     try {
       this.onStateChange("processing");
       
-      // Initialize Audio Contexts
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      this.audioContext = new AudioContextClass({ sampleRate: 16000 });
-      this.playbackContext = new AudioContextClass({ sampleRate: 24000 });
-      this.nextPlayTime = this.playbackContext.currentTime;
-
+      console.log("Requesting microphone access...");
       // Get Microphone
       this.mediaStream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
@@ -54,6 +49,21 @@ export class LiveSessionManager {
           noiseSuppression: true,
         } 
       });
+      console.log("الميكروفون مفتوح ومستمر.");
+
+      // Initialize Audio Contexts
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      this.audioContext = new AudioContextClass({ sampleRate: 16000 });
+      this.playbackContext = new AudioContextClass({ sampleRate: 24000 });
+      
+      if (this.audioContext.state === 'suspended') {
+        await this.audioContext.resume();
+      }
+      if (this.playbackContext.state === 'suspended') {
+        await this.playbackContext.resume();
+      }
+
+      this.nextPlayTime = this.playbackContext.currentTime;
 
       this.source = this.audioContext.createMediaStreamSource(this.mediaStream);
       this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);

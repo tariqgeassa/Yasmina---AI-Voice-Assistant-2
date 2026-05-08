@@ -397,6 +397,7 @@ export default function App() {
 
         <div className="flex items-center gap-4">
           <button
+            id="myButton"
             onClick={toggleListening}
             className={`
               group relative flex items-center gap-3 px-8 py-4 rounded-full font-medium tracking-wide transition-all duration-300 shadow-2xl
