@@ -29,6 +29,7 @@ export class LiveSessionManager {
   public onStateChange: (state: "idle" | "listening" | "processing" | "speaking") => void = () => {};
   public onMessage: (sender: "user" | "yasmina", text: string) => void = () => {};
   public onCommand: (url: string) => void = () => {};
+  public onClose: () => void = () => {};
 
   constructor() {
     this.ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -119,6 +120,13 @@ export class LiveSessionManager {
             this.onStateChange("listening");
           },
           onmessage: async (message: LiveServerMessage) => {
+            // Handle GoAway
+            if ((message as any).serverContent?.goAway) {
+              console.log("Live API: Received GoAway signal. Closing session.");
+              this.stop();
+              return;
+            }
+
             // Handle Audio Output
             const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
             if (base64Audio) {
@@ -193,8 +201,12 @@ export class LiveSessionManager {
     }
   }
 
-  private playAudioChunk(base64Data: string) {
+  private async playAudioChunk(base64Data: string) {
     if (!this.playbackContext || this.isMuted) return;
+    
+    if (this.playbackContext.state === 'suspended') {
+      await this.playbackContext.resume();
+    }
     
     try {
       const binaryString = atob(base64Data);
@@ -277,6 +289,7 @@ export class LiveSessionManager {
     }
     
     this.onStateChange("idle");
+    this.onClose();
   }
 
   sendText(text: string) {

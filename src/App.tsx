@@ -70,7 +70,11 @@ export default function App() {
         wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
       }
     } catch (err: any) {
-      console.error(`${err.name}, ${err.message}`);
+      if (err.name === 'NotAllowedError') {
+        console.warn("Wake lock is disabled by permissions policy in this environment.");
+      } else {
+        console.error(`${err.name}, ${err.message}`);
+      }
     }
   };
 
@@ -197,6 +201,12 @@ export default function App() {
           setTimeout(() => {
             window.open(url, "_blank");
           }, 1000);
+        };
+
+        session.onClose = () => {
+          setIsSessionActive(false);
+          releaseWakeLock();
+          setAppState("idle");
         };
 
         await session.start();

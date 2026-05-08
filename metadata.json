@@ -2,6 +2,7 @@
   "name": "Yasmina - AI Voice Assistant",
   "description": "A sassy, witty, and intelligent Egyptian AI voice assistant who speaks Egyptian Arabic and responds in whichever language you speak to her in.",
   "requestFramePermissions": [
-    "microphone"
+    "microphone",
+    "screen-wake-lock"
   ]
 }
